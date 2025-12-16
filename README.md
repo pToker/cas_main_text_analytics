@@ -8,3 +8,9 @@
     1. Promten, dass diese labels mit diesen stichworten relevant sind.
     1. oder nur die labels
 
+# To Do Next
+- [x] acknowledge, that I have to work locally, as raspi does not have gpu
+- [ ] initiate a project, with local env to make sure I don't publish my sensitive information
+- [ ] install postgresql
+
+
