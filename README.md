@@ -131,3 +131,14 @@ CREATE INDEX idx_predicted_labels ON emails USING GIN (predicted_labels);
 ```sql
 \dt
 ```
+
+## Python
+### venv
+```bash
+python3.12 -m venv .venv
+source .venv/bin/activate
+pip install fastapi sqlalchemy psycopg2-binary alembic python-dotenv
+python -m pip freeze > requirements.txt
+```
+
+### SQLAlchemy
