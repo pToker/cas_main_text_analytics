@@ -18,3 +18,8 @@ def get_db():
 def sync_gmail(db: Session = Depends(get_db)):
     sync_inbox(db)
     return {"status": "ok"}
+
+
+@app.post("/sync/gmail/initial")
+def initial_sync(db: Session = Depends(get_db)):
+    return run_initial_sync(db)

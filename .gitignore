@@ -2,3 +2,4 @@ ENV
 .venv/
 app/alembic.ini
 credentials.json
+token.json

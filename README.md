@@ -113,6 +113,29 @@ CREATE TABLE training_samples (
     PRIMARY KEY (email_id, label_id)
 );
 -- CREATE TABLE
+-- helper table to keep sync state
+mail_classifier=> CREATE TABLE gmail_sync_state (
+    id BOOLEAN PRIMARY KEY DEFAULT TRUE,
+    last_history_id TEXT NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+INSERT INTO gmail_sync_state (id, last_history_id)
+VALUES (TRUE, '0');
+-- CREATE TABLE
+-- INSERT 0 1
+-- audit trail / sync log
+mail_classifier=> CREATE TABLE gmail_sync_log (
+    id SERIAL PRIMARY KEY,
+    sync_type TEXT CHECK (sync_type IN ('initial', 'incremental', 'full')),
+    started_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    finished_at TIMESTAMP WITH TIME ZONE,
+    messages_added INT DEFAULT 0,
+    labels_updated INT DEFAULT 0,
+    success BOOLEAN,
+    error TEXT
+);
+-- CREATE TABLE
 ```
 
 #### Indexes
@@ -142,3 +165,15 @@ python -m pip freeze > requirements.txt
 ```
 
 ### SQLAlchemy
+
+
+## Gmail Setup
+
+Enable API:
+https://console.cloud.google.com/apis/library/gmail.googleapis.com?project=simple-calendar-367516
+
+Create Credentials:
+https://console.cloud.google.com/apis/credentials?project=simple-calendar-367516
+
+Create OAuth client ID
+
