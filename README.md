@@ -177,3 +177,11 @@ https://console.cloud.google.com/apis/credentials?project=simple-calendar-367516
 
 Create OAuth client ID
 
+# Development Environment
+
+`fastapi dev main.py`
+
+* App locally available at: http://127.0.0.1:8000/
+* App documentation (Swagger UI) locally available at: http://127.0.0.1:8000/docs#/default/sync_gmail_sync_gmail_pos
+* App documentation (redoc) locally available at: http://127.0.0.1:8000/redoc
+* OpenAPI JSON Schema: : http://127.0.0.1:8000/openapi.json

@@ -5,6 +5,15 @@ from app.db.session import SessionLocal
 app = FastAPI()
 
 
+@app.get("/")
+async def root():
+    return {"message": "Welcome to the Email Sync API"}
+
+
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy"}
+
 def get_db():
     db = SessionLocal()
     try:
