@@ -1,3 +1,23 @@
+# Status
+
+https://chatgpt.com/share/694abbb8-6814-8008-9b1d-07ed83c6ca93
+
+
+# Run
+
+```bash
+source venv/bin/activate
+uvicorn app.main:app --reload
+```
+
+
+# DB
+## Migration
+I am new to alembic (and the whole SQLAlchemy for that), so please point out obvious flaws here.
+```bash
+alembic init alembic
+```
+
 # Scope
 1. use gmail api to get all emails
     1. store the emails in a database
