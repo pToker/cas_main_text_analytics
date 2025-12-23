@@ -10,8 +10,8 @@ from sqlalchemy import pool
 
 from alembic import context
 
-from app.db.base import Base
-from app.db import models
+from failed__app.db.base import Base
+from failed__app.db import models
 
 
 # this is the Alembic Config object, which provides

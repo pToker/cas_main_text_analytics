@@ -13,6 +13,9 @@
 - [ ] initiate a project, with local env to make sure I don't publish my sensitive information
 - [ ] install postgresql
 
+# Open Tasks (beyond scope of CAS_MAIN project)
+- [ ] Production readiness (not just `fastapi dev app/main.py`)
+- [ ] authentication
 
 # Installation & Setup
 ## PostgreSQL

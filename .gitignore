@@ -2,4 +2,5 @@ ENV
 app/alembic.ini
 credentials.json
 token.json
+token.pickle
 __pycache__/

@@ -1,7 +1,7 @@
 from email import message_from_bytes
 import base64
-from app.db.models import Email
-from app.gmail.cleaner import clean_email
+from failed__app.db.models import Email
+from failed__app.gmail.cleaner import clean_email
 
 def fetch_and_store_email(db, service, gmail_id: str):
     ...
