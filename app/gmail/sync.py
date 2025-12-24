@@ -1,13 +1,18 @@
-from app.gmail.client import get_gmail_service
-from app.db import SessionLocal
-from app.models import Email, Label, SyncState
-from email.utils import parsedate_to_datetime
-from datetime import datetime, timezone
+import logging
 import base64
 import time
+from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
+
 from googleapiclient.errors import HttpError
 from sqlalchemy.exc import OperationalError
 
+from app.gmail.client import get_gmail_service
+from app.db import SessionLocal
+from app.models import Email, Label, SyncState
+
+
+logger = logging.getLogger("gmail.sync")
 
 MAX_RETRIES = 5
 
@@ -18,6 +23,7 @@ def safe_parse_date(value):
     try:
         return parsedate_to_datetime(value)
     except ValueError:
+        logger.warning("invalid date header value=%r", value)
         return None
 
 
@@ -26,11 +32,22 @@ def gmail_call(func):
         try:
             return func()
         except HttpError as e:
-            if e.resp.status in (429, 500, 503):
+            status = e.resp.status
+            if status in (429, 500, 503):
+                logger.warning(
+                    "gmail api transient error status=%s retry=%s",
+                    status,
+                    attempt + 1,
+                )
                 time.sleep(2 ** attempt)
             else:
+                logger.error(
+                    "gmail api error status=%s message=%s",
+                    status,
+                    e,
+                )
                 raise
-    raise RuntimeError("Gmail API retry limit exceeded")
+    raise RuntimeError("gmail api retry limit exceeded")
 
 
 def get_plain_text(payload):
@@ -61,11 +78,7 @@ def acquire_sync_lock(db):
     Returns SyncState if acquired, None if already running.
     """
     try:
-        state = (
-            db.query(SyncState)
-            .with_for_update()
-            .first()
-        )
+        state = db.query(SyncState).with_for_update().first()
 
         if not state:
             state = SyncState(id="gmail")
@@ -73,18 +86,21 @@ def acquire_sync_lock(db):
             db.flush()
 
         if state.running:
+            logger.info("sync already running, exiting")
             return None
 
         state.running = True
         state.last_started_at = datetime.utcnow()
         state.processed_messages = 0
         state.last_error = None
-
         db.commit()
+
+        logger.info("sync started")
         return state
 
     except OperationalError:
         db.rollback()
+        logger.exception("failed to acquire sync lock")
         return None
 
 
@@ -92,6 +108,10 @@ def release_sync_lock(db, state):
     state.running = False
     state.last_finished_at = datetime.now(tz=timezone.utc)
     db.commit()
+    logger.info(
+        "sync finished processed=%s",
+        state.processed_messages,
+    )
 
 
 def store_message(service, db, label_map, msg_id):
@@ -99,7 +119,7 @@ def store_message(service, db, label_map, msg_id):
         lambda: service.users().messages().get(
             userId="me",
             id=msg_id,
-            format="full"
+            format="full",
         ).execute()
     )
 
@@ -123,9 +143,11 @@ def store_message(service, db, label_map, msg_id):
             Label(
                 id=f"{msg_id}:{label_name}",
                 name=label_name,
-                email=email
+                email=email,
             )
         )
+
+    logger.debug("stored message id=%s", msg_id)
 
 
 def sync_gmail():
@@ -141,7 +163,7 @@ def sync_gmail():
         label_map = get_label_map(service)
 
         if state.history_id is None:
-            # INITIAL FULL SYNC
+            logger.info("full sync started")
             next_page_token = None
 
             while True:
@@ -149,7 +171,7 @@ def sync_gmail():
                     lambda: service.users().messages().list(
                         userId="me",
                         pageToken=next_page_token,
-                        maxResults=500
+                        maxResults=500,
                     ).execute()
                 )
 
@@ -157,7 +179,6 @@ def sync_gmail():
                     store_message(service, db, label_map, msg["id"])
                     state.processed_messages += 1
 
-                # SAFE COMMIT POINT
                 db.commit()
                 state.history_id = response.get("historyId")
                 db.commit()
@@ -167,23 +188,27 @@ def sync_gmail():
                     break
 
         else:
-            # INCREMENTAL SYNC
+            logger.info(
+                "incremental sync from history_id=%s",
+                state.history_id,
+            )
+
             try:
                 response = gmail_call(
                     lambda: service.users().history().list(
                         userId="me",
-                        startHistoryId=state.history_id
+                        startHistoryId=state.history_id,
                     ).execute()
                 )
             except HttpError as e:
                 if e.resp.status == 404:
-                    # historyId expired or invalid → full resync required
+                    logger.warning(
+                        "historyId expired, falling back to full sync"
+                    )
                     state.history_id = None
                     db.commit()
                     return sync_gmail()
-                else:
-                    raise
-
+                raise
 
             for h in response.get("history", []):
                 for added in h.get("messagesAdded", []):
@@ -195,7 +220,6 @@ def sync_gmail():
                     )
                     state.processed_messages += 1
 
-                # SAFE COMMIT AFTER EACH HISTORY BATCH
                 db.commit()
                 if h.get("id"):
                     state.history_id = h["id"]
@@ -204,6 +228,7 @@ def sync_gmail():
     except Exception as e:
         state.last_error = str(e)
         db.commit()
+        logger.exception("sync failed")
         raise
 
     finally:

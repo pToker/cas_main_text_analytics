@@ -1,6 +1,52 @@
 # Status
 
 https://chatgpt.com/share/694abbb8-6814-8008-9b1d-07ed83c6ca93
+<details>
+    <summary>Intent</summary>
+
+    Project goal:
+    - Gmail → Postgres sync via FastAPI
+    - Incremental, resumable, single-run enforced
+    - Alembic migrations only
+    - Logging via stdlib, default WARNING
+
+    Python version:
+    - 3.12
+
+    Tech stack:
+    - FastAPI
+    - SQLAlchemy
+    - Alembic
+    - psycopg2
+    - Gmail API
+
+    Graciously sponsored by GPT5
+
+</details>
+
+<details>
+    <summary>GPT Question (customer) template</summary>
+    
+    Goal of this change:
+    - (one sentence)
+
+    Current behavior:
+    - (what happens now)
+
+    Expected behavior:
+    - (what should happen)
+
+    Constraints:
+    - beginner-friendly
+    - full file contents
+    - alembic only
+    - production-safe defaults
+
+    Relevant files:
+    - app/gmail/sync.py
+    - app/models.py
+
+</details>
 
 
 # Run

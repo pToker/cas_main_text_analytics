@@ -1,0 +1,6 @@
+- Incremental Gmail sync using historyId
+- Resumable after crash
+- Sync lock enforced via DB row
+- Status endpoint at /sync/status
+- Alembic-managed schema
+- Logging default WARNING
