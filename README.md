@@ -11,12 +11,44 @@ uvicorn app.main:app --reload
 ```
 
 
-# DB
-## Migration
+# DB & Models (ORM)
 I am new to alembic (and the whole SQLAlchemy for that), so please point out obvious flaws here.
+
+<!-- details open -->
+<details>
+<summary>alembic cheatsheet</summary>
+
+## About
+
+[alembic](https://alembic.sqlalchemy.org/) is the migration tool for [SQLAlchemy](https://www.sqlalchemy.org/)
+
+## Commands
+
+| command           | explanation                                                                           |
+| ----------------- | ------------------------------------------------------------------------------------  |
+| `alembic history` |  shows all commits and where the head is at (simmilar to `git history`)               |
+
+</details>
+
+## Initial migration
+
 ```bash
 alembic init alembic
 ```
+generates a version (/alembic/versions/...)
+
+## Updates (How to handle future changes)
+
+Change a model in app/models.py
+Example: add a column priority = Column(Integer, default=0) to Email
+
+Run:
+```bash
+alembic revision --autogenerate -m "add priority to email"
+alembic upgrade head
+```
+
+Database is updated safely, no data lost.
 
 # Scope
 1. use gmail api to get all emails

@@ -2,7 +2,7 @@ from app.gmail.client import get_gmail_service
 from app.db import SessionLocal
 from app.models import Email, Label, SyncState
 from email.utils import parsedate_to_datetime
-from datetime import datetime
+from datetime import datetime, timezone
 import base64
 import time
 from googleapiclient.errors import HttpError
@@ -105,7 +105,7 @@ def sync_gmail():
         db.add(state)
 
     state.running = True
-    state.last_started_at = datetime.now(datetime.timezone.utc)
+    state.last_started_at = datetime.now(timezone.utc)
     state.last_error = None
     state.processed_messages = 0
     db.commit()
