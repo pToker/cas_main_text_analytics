@@ -11,45 +11,6 @@ uvicorn app.main:app --reload
 ```
 
 
-# DB & Models (ORM)
-I am new to alembic (and the whole SQLAlchemy for that), so please point out obvious flaws here.
-
-<!-- details open -->
-<details>
-<summary>alembic cheatsheet</summary>
-
-## About
-
-[alembic](https://alembic.sqlalchemy.org/) is the migration tool for [SQLAlchemy](https://www.sqlalchemy.org/)
-
-## Commands
-
-| command           | explanation                                                                           |
-| ----------------- | ------------------------------------------------------------------------------------  |
-| `alembic history` |  shows all commits and where the head is at (simmilar to `git history`)               |
-
-</details>
-
-## Initial migration
-
-```bash
-alembic init alembic
-```
-generates a version (/alembic/versions/...)
-
-## Updates (How to handle future changes)
-
-Change a model in app/models.py
-Example: add a column priority = Column(Integer, default=0) to Email
-
-Run:
-```bash
-alembic revision --autogenerate -m "add priority to email"
-alembic upgrade head
-```
-
-Database is updated safely, no data lost.
-
 # Scope
 1. use gmail api to get all emails
     1. store the emails in a database
@@ -69,7 +30,18 @@ Database is updated safely, no data lost.
 - [ ] Production readiness (not just `fastapi dev app/main.py`)
 - [ ] authentication
 
+
 # Installation & Setup
+
+## Python
+### venv
+```bash
+python3.12 -m venv venv
+source venv/bin/activate
+pip install -r app/requirements.txt
+# python -m pip freeze > app/requirements.txt
+```
+
 ## PostgreSQL
 ### Installation
 ```bash
@@ -94,7 +66,7 @@ ALTER USER mailapp CREATEDB;
 ```
 
 
-### Create the database
+### Create the database (obsolete due to the use of alembic?)
 ```sql
 CREATE DATABASE mail_classifier
   WITH OWNER = mailapp
@@ -210,27 +182,25 @@ CREATE INDEX idx_predicted_labels ON emails USING GIN (predicted_labels);
 \dt
 ```
 
-## Python
-### venv
-```bash
-python3.12 -m venv .venv
-source .venv/bin/activate
-pip install fastapi sqlalchemy psycopg2-binary alembic python-dotenv
-python -m pip freeze > requirements.txt
-```
 
-### SQLAlchemy
+
+### SQLAlchemy ORM (Object Relational Mapper) incl. alembic
+Not much of a setup done so far. Installed some python packages...
 
 
 ## Gmail Setup
 
-Enable API:
-https://console.cloud.google.com/apis/library/gmail.googleapis.com?project=simple-calendar-367516
+* Enable GMail API:  https://console.cloud.google.com/apis/library/gmail.googleapis.com?project=simple-calendar-367516
+* Create Credentials:  https://console.cloud.google.com/apis/credentials?project=simple-calendar-367516
+* Create OAuth client ID
+* Allow test-user to use the dev environment (e.g. my personal email address)
 
-Create Credentials:
-https://console.cloud.google.com/apis/credentials?project=simple-calendar-367516
+### Cron Job for running the sync hourly
+`crontab -l`
 
-Create OAuth client ID
+```ini
+0 * * * * curl -X POST http://localhost:8000/sync
+```
 
 # Development Environment
 
@@ -240,3 +210,41 @@ Create OAuth client ID
 * App documentation (Swagger UI) locally available at: http://127.0.0.1:8000/docs#/default/sync_gmail_sync_gmail_pos
 * App documentation (redoc) locally available at: http://127.0.0.1:8000/redoc
 * OpenAPI JSON Schema: : http://127.0.0.1:8000/openapi.json
+
+# Components
+### DB & Models (ORM)
+I am new to alembic (and the whole SQLAlchemy for that), so please point out obvious flaws here.
+
+<!-- details open -->
+<details>
+<summary>alembic cheatsheet</summary>
+
+#### About
+
+[alembic](https://alembic.sqlalchemy.org/) is the migration tool for [SQLAlchemy](https://www.sqlalchemy.org/)
+
+#### Commands
+
+| command           | explanation                                                                           |
+| ----------------- | ------------------------------------------------------------------------------------  |
+| `alembic history` |  shows all commits and where the head is at (simmilar to `git history`)               |
+
+</details>
+
+#### Initial migration
+
+```bash
+alembic init alembic
+```
+generates a version (/alembic/versions/...)
+
+#### Updates (How to handle future changes)
+
+Change a model in app/models.py
+Example: add a column priority = Column(Integer, default=0) to Email
+
+Run:
+```bash
+alembic revision --autogenerate -m "add priority to email"
+alembic upgrade head
+```
