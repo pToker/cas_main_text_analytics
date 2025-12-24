@@ -94,7 +94,7 @@ def release_sync_lock(db, state):
     db.commit()
 
 
-def store_message(service, db, label_map, msg_id, state):
+def store_message(service, db, label_map, msg_id):
     msg = gmail_call(
         lambda: service.users().messages().get(
             userId="me",
@@ -127,16 +127,12 @@ def store_message(service, db, label_map, msg_id, state):
             )
         )
 
-    state.processed_messages += 1
-    state.history_id = msg.get("historyId")
-
 
 def sync_gmail():
     db = SessionLocal()
-
     state = acquire_sync_lock(db)
+
     if state is None:
-        # Another sync is already running
         db.close()
         return
 
@@ -145,8 +141,9 @@ def sync_gmail():
         label_map = get_label_map(service)
 
         if state.history_id is None:
-            # FULL INITIAL SYNC
+            # INITIAL FULL SYNC
             next_page_token = None
+
             while True:
                 response = gmail_call(
                     lambda: service.users().messages().list(
@@ -157,13 +154,18 @@ def sync_gmail():
                 )
 
                 for msg in response.get("messages", []):
-                    store_message(
-                        service, db, label_map, msg["id"], state
-                    )
+                    store_message(service, db, label_map, msg["id"])
+                    state.processed_messages += 1
+
+                # SAFE COMMIT POINT
+                db.commit()
+                state.history_id = response.get("historyId")
+                db.commit()
 
                 next_page_token = response.get("nextPageToken")
                 if not next_page_token:
                     break
+
         else:
             # INCREMENTAL SYNC
             response = gmail_call(
@@ -176,9 +178,18 @@ def sync_gmail():
             for h in response.get("history", []):
                 for added in h.get("messagesAdded", []):
                     store_message(
-                        service, db, label_map,
-                        added["message"]["id"], state
+                        service,
+                        db,
+                        label_map,
+                        added["message"]["id"],
                     )
+                    state.processed_messages += 1
+
+                # SAFE COMMIT AFTER EACH HISTORY BATCH
+                db.commit()
+                if h.get("id"):
+                    state.history_id = h["id"]
+                    db.commit()
 
     except Exception as e:
         state.last_error = str(e)
