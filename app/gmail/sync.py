@@ -21,7 +21,10 @@ def safe_parse_date(value):
     if not value:
         return None
     try:
-        return parsedate_to_datetime(value)
+        dt = parsedate_to_datetime(value)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt
     except ValueError:
         logger.warning("invalid date header value=%r", value)
         return None

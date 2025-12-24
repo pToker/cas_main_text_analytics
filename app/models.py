@@ -20,7 +20,7 @@ class Email(Base):
     from_address = Column(String)
     to_address = Column(String)
     subject = Column(String)
-    date = Column(DateTime, index=True)
+    date = Column(DateTime(timezone=True), index=True)
     body = Column(Text)
 
     labels = relationship("Label", back_populates="email", cascade="all, delete")
@@ -52,7 +52,7 @@ class SyncState(Base):
     id = Column(String, primary_key=True)
     history_id = Column(String)
     running = Column(Boolean, default=False)
-    last_started_at = Column(DateTime)
-    last_finished_at = Column(DateTime)
+    last_started_at = Column(DateTime(timezone=True))
+    last_finished_at = Column(DateTime(timezone=True))
     processed_messages = Column(Integer, default=0)
     last_error = Column(Text)

@@ -20,7 +20,7 @@ from app.models import *  # import all models
 # access to the values within the .ini file in use.
 config = context.config
 
-config.set_main_option("sqlalchemy.url", app_config.DATABASE_URL)
+config.set_main_option("sqlalchemy.url", app_config.DATABASE_URL_ALEMBIC)
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
