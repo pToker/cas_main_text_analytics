@@ -1,22 +1,17 @@
 from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
-from app.db import SessionLocal
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.db import get_db
 from app.models import SyncState
 
 router = APIRouter(prefix="/sync", tags=["sync"])
 
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
 @router.get("/status")
-def sync_status(db: Session = Depends(get_db)):
-    state = db.query(SyncState).first()
+async def sync_status(db: AsyncSession = Depends(get_db)):
+    result = await db.execute(
+        "SELECT * FROM sync_state LIMIT 1"
+    )
+    state = result.fetchone()
 
     if not state:
         return {

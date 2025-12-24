@@ -30,6 +30,7 @@ Constraints:
 
 Current project structure:
 (PASTE TREE HERE)
+`tree -I "__pycache__|venv|.git"`
 
 Relevant files for this task:
 (PASTE FILES HERE)
