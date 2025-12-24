@@ -1,6 +1,7 @@
 # Status
 
-https://chatgpt.com/share/694abbb8-6814-8008-9b1d-07ed83c6ca93
+https://chatgpt.com/share/694bfb93-ae9c-8008-a820-09777285d141
+
 <details>
     <summary>Intent</summary>
 
@@ -26,6 +27,7 @@ https://chatgpt.com/share/694abbb8-6814-8008-9b1d-07ed83c6ca93
 
 <details>
     <summary>GPT Question (customer) template</summary>
+    See PROMPT.md and PROJECT_STATE.md for further details.
     
     Goal of this change:
     - (one sentence)
@@ -236,10 +238,10 @@ Not much of a setup done so far. Installed some python packages...
 
 ## Gmail Setup
 
-* Enable GMail API:  https://console.cloud.google.com/apis/library/gmail.googleapis.com?project=simple-calendar-367516
-* Create Credentials:  https://console.cloud.google.com/apis/credentials?project=simple-calendar-367516
-* Create OAuth client ID
-* Allow test-user to use the dev environment (e.g. my personal email address)
+* Enable GMail API:  [Google Cloud Console](https://console.cloud.google.com/apis/library/gmail.googleapis.com?project=simple-calendar-367516)
+* Create Credentials:  [Google Cloud Console](https://console.cloud.google.com/apis/credentials?project=simple-calendar-367516)
+* Create OAuth client ID:   [Google Cloud Console](https://console.cloud.google.com/auth/clients/95314945057-snqjval7p1rdlse3bqrt1ep9pkih7f3a.apps.googleusercontent.com?project=simple-calendar-367516)
+* Allow test-user to use the dev environment (e.g. my personal email address):  [Google Cloud Console](https://console.cloud.google.com/auth/audience?project=simple-calendar-367516)
 
 ### Cron Job for running the sync hourly
 `crontab -l`
