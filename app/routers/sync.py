@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends
+from sqlalchemy import text as sql_text
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db import get_db
 from app.models import SyncState
@@ -9,7 +10,7 @@ router = APIRouter(prefix="/sync", tags=["sync"])
 @router.get("/status")
 async def sync_status(db: AsyncSession = Depends(get_db)):
     result = await db.execute(
-        "SELECT * FROM sync_state LIMIT 1"
+        sql_text("SELECT * FROM sync_state LIMIT 1")
     )
     state = result.fetchone()
 
