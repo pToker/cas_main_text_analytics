@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 
 from googleapiclient.errors import HttpError
-from sqlalchemy import select, update
+from sqlalchemy import select
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -15,6 +15,7 @@ from app.models import Email, Label, SyncState
 
 logger = logging.getLogger("gmail.sync")
 MAX_RETRIES = 5
+MAX_CONCURRENT_EMAILS = 10  # safe concurrency limit
 
 
 def safe_parse_date(value):
@@ -139,6 +140,16 @@ async def store_message(service, db: AsyncSession, label_map, msg_id):
     logger.debug("stored message id=%s", msg_id)
 
 
+async def store_message_batch(service, db: AsyncSession, label_map, msg_ids):
+    sem = asyncio.Semaphore(MAX_CONCURRENT_EMAILS)
+
+    async def safe_store(msg_id):
+        async with sem:
+            await store_message(service, db, label_map, msg_id)
+
+    await asyncio.gather(*(safe_store(mid) for mid in msg_ids))
+
+
 async def sync_gmail():
     async with AsyncSessionLocal() as db:
         state = await acquire_sync_lock(db)
@@ -161,9 +172,10 @@ async def sync_gmail():
                         ).execute()
                     )
 
-                    for msg in response.get("messages", []):
-                        await store_message(service, db, label_map, msg["id"])
-                        state.processed_messages += 1
+                    msg_ids = [msg["id"] for msg in response.get("messages", [])]
+                    if msg_ids:
+                        await store_message_batch(service, db, label_map, msg_ids)
+                        state.processed_messages += len(msg_ids)
 
                     await db.commit()
                     state.history_id = response.get("historyId")
@@ -191,9 +203,10 @@ async def sync_gmail():
                     raise
 
                 for h in response.get("history", []):
-                    for added in h.get("messagesAdded", []):
-                        await store_message(service, db, label_map, added["message"]["id"])
-                        state.processed_messages += 1
+                    msg_ids = [added["message"]["id"] for added in h.get("messagesAdded", [])]
+                    if msg_ids:
+                        await store_message_batch(service, db, label_map, msg_ids)
+                        state.processed_messages += len(msg_ids)
 
                     await db.commit()
                     if h.get("id"):
