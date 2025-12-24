@@ -168,12 +168,22 @@ def sync_gmail():
 
         else:
             # INCREMENTAL SYNC
-            response = gmail_call(
-                lambda: service.users().history().list(
-                    userId="me",
-                    startHistoryId=state.history_id
-                ).execute()
-            )
+            try:
+                response = gmail_call(
+                    lambda: service.users().history().list(
+                        userId="me",
+                        startHistoryId=state.history_id
+                    ).execute()
+                )
+            except HttpError as e:
+                if e.resp.status == 404:
+                    # historyId expired or invalid → full resync required
+                    state.history_id = None
+                    db.commit()
+                    return sync_gmail()
+                else:
+                    raise
+
 
             for h in response.get("history", []):
                 for added in h.get("messagesAdded", []):
