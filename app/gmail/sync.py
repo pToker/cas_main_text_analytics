@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 import base64
 import time
 from googleapiclient.errors import HttpError
+from sqlalchemy.exc import OperationalError
 
 
 MAX_RETRIES = 5
@@ -21,16 +22,12 @@ def safe_parse_date(value):
 
 
 def gmail_call(func):
-    """
-    Simple retry wrapper for Gmail API calls
-    """
     for attempt in range(MAX_RETRIES):
         try:
             return func()
         except HttpError as e:
             if e.resp.status in (429, 500, 503):
-                sleep_time = 2 ** attempt
-                time.sleep(sleep_time)
+                time.sleep(2 ** attempt)
             else:
                 raise
     raise RuntimeError("Gmail API retry limit exceeded")
@@ -56,6 +53,45 @@ def get_label_map(service):
         lambda: service.users().labels().list(userId="me").execute()
     )
     return {label["id"]: label["name"] for label in result["labels"]}
+
+
+def acquire_sync_lock(db):
+    """
+    Atomically acquire the sync lock.
+    Returns SyncState if acquired, None if already running.
+    """
+    try:
+        state = (
+            db.query(SyncState)
+            .with_for_update()
+            .first()
+        )
+
+        if not state:
+            state = SyncState(id="gmail")
+            db.add(state)
+            db.flush()
+
+        if state.running:
+            return None
+
+        state.running = True
+        state.last_started_at = datetime.utcnow()
+        state.processed_messages = 0
+        state.last_error = None
+
+        db.commit()
+        return state
+
+    except OperationalError:
+        db.rollback()
+        return None
+
+
+def release_sync_lock(db, state):
+    state.running = False
+    state.last_finished_at = datetime.now(tz=timezone.utc)
+    db.commit()
 
 
 def store_message(service, db, label_map, msg_id, state):
@@ -96,21 +132,16 @@ def store_message(service, db, label_map, msg_id, state):
 
 
 def sync_gmail():
-    service = get_gmail_service()
     db = SessionLocal()
 
-    state = db.query(SyncState).first()
-    if not state:
-        state = SyncState(id="gmail")
-        db.add(state)
-
-    state.running = True
-    state.last_started_at = datetime.now(timezone.utc)
-    state.last_error = None
-    state.processed_messages = 0
-    db.commit()
+    state = acquire_sync_lock(db)
+    if state is None:
+        # Another sync is already running
+        db.close()
+        return
 
     try:
+        service = get_gmail_service()
         label_map = get_label_map(service)
 
         if state.history_id is None:
@@ -149,13 +180,11 @@ def sync_gmail():
                         added["message"]["id"], state
                     )
 
-        state.last_finished_at = datetime.utcnow()
-
     except Exception as e:
         state.last_error = str(e)
+        db.commit()
         raise
 
     finally:
-        state.running = False
-        db.commit()
+        release_sync_lock(db, state)
         db.close()
