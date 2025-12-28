@@ -60,9 +60,9 @@ uvicorn app.main:app --reload
 
 
 # Scope
-1. use gmail api to get all emails
-    1. store the emails in a database
-    1. generate embeddings
+- [x] use gmail api to get all emails
+  - [x] store the emails in a database
+ - [ ] generate embeddings
 1. tf-idf + svm
 1. [xnli](https://github.com/facebookresearch/XNLI) (zero shot transformer) / [xlm](https://huggingface.co/FacebookAI/xlm-roberta-large)
 1. llm mit topic modelling (lektion vom 2025-12-16)?
