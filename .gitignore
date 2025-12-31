@@ -16,3 +16,6 @@ token.json
 
 # Logs
 *.log
+
+# dumps / exports
+*.joblib
