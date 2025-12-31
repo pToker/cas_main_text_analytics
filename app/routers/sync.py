@@ -28,7 +28,7 @@ def sync_emails(background_tasks: BackgroundTasks):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/status", labels=["status"])
+@router.get("/status", tags=["status"])
 async def sync_status():
     """
     Check current sync state.
