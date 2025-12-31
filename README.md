@@ -51,13 +51,6 @@ https://chatgpt.com/share/694bfb93-ae9c-8008-a820-09777285d141
 </details>
 
 
-# Run
-
-```bash
-source venv/bin/activate
-uvicorn app.main:app --reload
-```
-
 
 # Scope
 - [x] use gmail api to get all emails
@@ -71,12 +64,12 @@ uvicorn app.main:app --reload
 
 # To Do Next
 - [x] acknowledge, that I have to work locally, as raspi does not have gpu
-- [ ] initiate a project, with local env to make sure I don't publish my sensitive information
-- [ ] install postgresql
+- [x] initiate a project, with local env to make sure I don't publish my sensitive information
+- [x] install postgresql
 
 # Open Tasks (beyond scope of CAS_MAIN project)
-- [ ] Production readiness (not just `fastapi dev app/main.py`)
-- [ ] authentication
+- [x] Production readiness (not just `fastapi dev app/main.py`)
+- [-] authentication
 
 
 # Installation & Setup
@@ -87,7 +80,7 @@ uvicorn app.main:app --reload
 python3.12 -m venv venv
 source venv/bin/activate
 pip install -r app/requirements.txt
-# python -m pip freeze > app/requirements.txt
+pip freeze > requirements.txt
 ```
 
 ## PostgreSQL
@@ -153,84 +146,6 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- CREATE EXTENSION
 ```
 
-### Create the tables for email and labels
-```sql
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
--- CREATE EXTENSION
-CREATE TABLE emails (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    gmail_id TEXT UNIQUE NOT NULL,
-    thread_id TEXT,
-    subject TEXT,
-    sender TEXT,
-    body TEXT,
-    cleaned_text TEXT NOT NULL,
-    received_at TIMESTAMP WITH TIME ZONE,
-    in_inbox BOOLEAN DEFAULT true,
-
-    predicted_labels JSONB,
-    applied_labels JSONB,
-
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-);
--- CREATE TABLE
-CREATE TABLE labels (
-    id SERIAL PRIMARY KEY,
-    name TEXT UNIQUE NOT NULL
-);
--- CREATE TABLE
-CREATE TABLE training_samples (
-    email_id UUID REFERENCES emails(id) ON DELETE CASCADE,
-    label_id INT REFERENCES labels(id) ON DELETE CASCADE,
-    value BOOLEAN NOT NULL,
-    source TEXT CHECK (source IN ('gmail', 'manual')),
-
-    PRIMARY KEY (email_id, label_id)
-);
--- CREATE TABLE
--- helper table to keep sync state
-mail_classifier=> CREATE TABLE gmail_sync_state (
-    id BOOLEAN PRIMARY KEY DEFAULT TRUE,
-    last_history_id TEXT NOT NULL,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-);
-
-INSERT INTO gmail_sync_state (id, last_history_id)
-VALUES (TRUE, '0');
--- CREATE TABLE
--- INSERT 0 1
--- audit trail / sync log
-mail_classifier=> CREATE TABLE gmail_sync_log (
-    id SERIAL PRIMARY KEY,
-    sync_type TEXT CHECK (sync_type IN ('initial', 'incremental', 'full')),
-    started_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-    finished_at TIMESTAMP WITH TIME ZONE,
-    messages_added INT DEFAULT 0,
-    labels_updated INT DEFAULT 0,
-    success BOOLEAN,
-    error TEXT
-);
--- CREATE TABLE
-```
-
-#### Indexes
-```sql
-CREATE INDEX idx_emails_gmail_id ON emails(gmail_id);
-CREATE INDEX idx_emails_inbox ON emails(in_inbox);
-CREATE INDEX idx_training_label ON training_samples(label_id);
--- CREATE INDEX
--- CREATE INDEX
--- CREATE INDEX
-CREATE INDEX idx_predicted_labels ON emails USING GIN (predicted_labels);
--- CREATE INDEX
-```
-
-#### All good?
-```sql
-\dt
-```
-
-
 
 ### SQLAlchemy ORM (Object Relational Mapper) incl. alembic
 Not much of a setup done so far. Installed some python packages...
@@ -287,8 +202,9 @@ alembic init alembic
 generates a version (/alembic/versions/...)
 
 #### Updates (How to handle future changes)
+When adding new tables or columns, generate migrations via Alembic.
 
-Change a model in app/models.py
+Change a model in app/models.py  
 Example: add a column priority = Column(Integer, default=0) to Email
 
 Run:
@@ -299,77 +215,10 @@ alembic upgrade head
 
 
 
+# Run
 
-<details>
-    <summary>Next Steps</details>
-
-    Next Steps / TODO
-1️⃣ Sync Optimization
-
-Consider tuning MAX_CONCURRENT_EMAILS in app/gmail/sync.py depending on:
-
-Gmail API quota limits
-
-PostgreSQL connection limits
-
-Optionally, batch commits for very large inboxes instead of committing after every batch to reduce DB load.
-
-2️⃣ Robustness
-
-Add retry logic for database operations if transient failures occur (e.g., deadlocks, network blips).
-
-Monitor and log Gmail API rate limits; optionally throttle dynamically if necessary.
-
-3️⃣ Testing & Verification
-
-Write unit tests for:
-
-safe_parse_date()
-
-store_message() and batch processing
-
-Lock acquisition (acquire_sync_lock)
-
-Write integration tests with:
-
-Gmail test account
-
-Local PostgreSQL instance
-
-Verify UTC consistency: all timestamps in DB should be timezone-aware.
-
-4️⃣ Alembic / Schema Management
-
-Always use DATABASE_URL_ALEMBIC for migrations, keep async runtime URL separate.
-
-When adding new tables or columns, generate migrations via Alembic:
-
-alembic revision --autogenerate -m "description"
-alembic upgrade head
-
-5️⃣ FastAPI Integration
-
-Consider creating async endpoints to trigger sync manually or schedule via background tasks.
-
-Ensure single active sync logic works with multiple requests; rely on your DB lock.
-
-6️⃣ Logging & Monitoring
-
-Keep Python stdlib logging, configurable via environment.
-
-Optionally add metrics (e.g., processed_messages, sync duration) for monitoring.
-
-7️⃣ Incremental Improvements
-
-If inbox grows large, implement pagination for incremental sync with concurrency.
-
-Optionally cache label_map to avoid repeated Gmail API calls.
-
-Consider error notifications for sync failures (email/logging system).
-
-This summary ensures you continue safely building features while fully leveraging async concurrency, UTC-aware timestamps, and Alembic-managed migrations.
-
-If you want, I can also make a diagram showing the flow of your async Gmail sync with locks, batches, and incremental sync, which can help visualize the whole system.
-
-Do you want me to do that?
+```bash
+source venv/bin/activate
+python main.py
+```
 </summary>
