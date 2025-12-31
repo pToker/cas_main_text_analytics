@@ -1,26 +1,19 @@
-from fastapi import FastAPI, BackgroundTasks
-from app.gmail.sync import sync_gmail
-from app.routers.sync import router as sync_router
-from app.config import setup_logging
-from dotenv import load_dotenv
 import os
+from app.logging_config import setup_logging
+from app.middleware.server import ServerHeaderMiddleware
+from app.routers import sync
+from app.routers.admin import db as admin_db
+from dotenv import load_dotenv
+from fastapi import FastAPI
+from pathlib import Path
 
-load_dotenv()
 
 setup_logging()
 
-app = FastAPI(title="Gmail Sync Service")
 
-app.include_router(sync_router)
+app = FastAPI(title="Life Terminal", swagger_ui_parameters={"syntaxHighlight": {"theme": "monokai"}})
+app.add_middleware(ServerHeaderMiddleware)
 
-
-@app.post("/sync/run")
-def run_sync(background_tasks: BackgroundTasks):
-    background_tasks.add_task(sync_gmail)
-    return {"status": "sync started"}
-
-
-if __name__ == "__main__":
-    import uvicorn
-
-    uvicorn.run(app, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", 8000)), log_level=os.getenv("LOG_LEVEL", "info"))
+# include routers
+app.include_router(sync.router)
+app.include_router(admin_db.router)

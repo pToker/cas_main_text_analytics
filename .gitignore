@@ -1,7 +1,18 @@
-ENV
-app/alembic.ini
-credentials.json
-token.json
-token.pickle
 __pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environment
+ENV
+.venv/
+venv/
+.env
+
+# Secrets
+app/credentials.json
+app/token.pickle
+token.json
+
+# Logs
 *.log
