@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from app.db.session import AsyncSessionLocal
-from app.db.reset import reset_sync_tables
+from app.db.reset import reset_email_tables
 
 logger = logging.getLogger(__name__)
 
@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 async def main() -> None:
     async with AsyncSessionLocal() as session:
         async with session.begin():
-            await reset_sync_tables(session)
+            await reset_email_tables(session)
 
     logger.info("✅ Database reset: sync_state, labels, emails")
 

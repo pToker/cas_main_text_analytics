@@ -1,5 +1,5 @@
 from app.db.session import engine, AsyncSessionLocal, get_db
-from app.db.reset import reset_sync_tables
+from app.db.reset import reset_email_tables
 from app.db.base import Base
 
 __all__ = [
@@ -7,5 +7,5 @@ __all__ = [
     "AsyncSessionLocal",
     "get_db",
     "Base",
-    "reset_sync_tables"
+    "reset_email_tables"
 ]

@@ -16,10 +16,11 @@ ADMIN_API_KEY: str = os.getenv("ADMIN_API_KEY", "change_me_to_a_secure_key")
 GMAIL_SCOPES = ["https://www.googleapis.com/auth/gmail.modify",
                  "https://www.googleapis.com/auth/gmail.labels",]
 
-def load_credentials() -> Dict[str, Any]:
-    if CREDENTIALS_FILE.exists():
-        import json
-        with open(CREDENTIALS_FILE) as f:
-            return json.load(f)
-    return {}
+# TODO: Remove
+# def load_credentials() -> Dict[str, Any]:
+#     if CREDENTIALS_FILE.exists():
+#         import json
+#         with open(CREDENTIALS_FILE) as f:
+#             return json.load(f)
+#     return {}
 

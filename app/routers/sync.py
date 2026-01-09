@@ -8,7 +8,7 @@ from sqlalchemy import select
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/sync", tags=["sync"])
+router = APIRouter(prefix="/email/sync", tags=["email", "sync"])
 
 
 @router.post("/run")

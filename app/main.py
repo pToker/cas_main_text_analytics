@@ -1,4 +1,5 @@
 import os
+from app.routers import emails
 from app.logging_config import setup_logging
 from app.middleware.server import ServerHeaderMiddleware
 from app.routers import sync
@@ -17,3 +18,4 @@ app.add_middleware(ServerHeaderMiddleware)
 app.include_router(sync.router)
 app.include_router(ml.router)
 app.include_router(admin_db.router)
+app.include_router(emails.router)

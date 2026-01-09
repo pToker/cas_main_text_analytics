@@ -2,17 +2,15 @@ import asyncio
 import base64
 import logging
 import os
-import dotenv
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 from typing import Optional
 
-from asyncpg import NotNullViolationError
 from googleapiclient.errors import HttpError
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.exc import IntegrityError, OperationalError, SQLAlchemyError
+from sqlalchemy.exc import IntegrityError, OperationalError
 
 from app.gmail.client import GmailClient
 from app.db.session import AsyncSessionLocal
@@ -221,7 +219,6 @@ async def sync_gmail():
                             },
                         )
                         raise
-                        break
 
 
 

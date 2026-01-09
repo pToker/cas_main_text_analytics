@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, status, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.db import get_db, reset_sync_tables
+from app.db import get_db, reset_email_tables
 from app.config import ADMIN_API_KEY
 from pydantic import SecretStr
 
@@ -22,4 +22,5 @@ def check_api_key(api_key: SecretStr):
 async def reset_database(api_key: SecretStr, session: AsyncSession = Depends(get_db)) -> None:
     check_api_key(api_key)
     async with session.begin():
-        await reset_sync_tables(session)
+        # Reset email-related tables. more tables can be added as needed.
+        await reset_email_tables(session)
