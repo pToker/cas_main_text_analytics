@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from app.db.session import get_db
 
-from app.ml.training import load_training_data, train_model, evaluate_model
+from app.ml.training import load_training_data, train_model, evaluate_model, train_and_evaluate_roberta_svc
 from app.ml.persistence import save_model, load_model
 from app.ml.utils import split_data
 from app.ml.inference import load_inbox_emails, predict_labels
@@ -65,6 +65,47 @@ async def train_and_evaluate(db=Depends(get_db)):
     )
 
     return list({"metrics": metrics, "result_subset": [result for result in zip([message.split("\n")[0] for message in texts_test], labels_test, metrics['predictions'])][:10]})
+
+
+@router.post(
+    "/train-and-evaluate-roberta",
+    summary="Train and evaluate RoBERTa embeddings + LinearSVC (CPU)",
+)
+async def train_and_evaluate_roberta_endpoint(db=Depends(get_db)):
+    texts, labels = await load_training_data(db)
+
+    (
+        texts_train,
+        texts_test,
+        labels_train,
+        labels_test,
+    ) = split_data(texts, labels)
+
+    metrics = train_and_evaluate_roberta_svc(
+        texts_train,
+        texts_test,
+        labels_train,
+        labels_test,
+    )
+
+    return {
+        "metrics": metrics,
+        "result_subset": [
+            (
+                text.split("\n")[0],
+                true,
+                pred,
+            )
+            for text, true, pred in zip(
+                texts_test,
+                labels_test,
+                metrics["predictions"],
+            )
+        ][:10],
+    }
+
+
+
 
 @router.get("/predict")
 async def predict_ml_labels(db=Depends(get_db)):

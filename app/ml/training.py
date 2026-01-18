@@ -1,3 +1,9 @@
+import numpy as np
+import torch
+from app.ml.config import SEMANTIC_LABELS
+from app.ml.utils import get_stopwords
+from app.models.email import Email
+from app.models.label import Label
 from sqlalchemy import select
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.svm import LinearSVC
@@ -7,11 +13,40 @@ from sklearn.metrics import (
     confusion_matrix,
 )
 
-from app.models.email import Email
-from app.models.label import Label
-from app.ml.config import SEMANTIC_LABELS
-from app.ml.utils import get_stopwords
-import numpy as np
+from transformers import AutoTokenizer, AutoModel
+
+
+def roberta_embeddings(texts, batch_size=8):
+    tokenizer = AutoTokenizer.from_pretrained("distilroberta-base")
+    # tokenizer = AutoTokenizer.from_pretrained("roberta-base") # better model performance / training takes 160% of time
+    model = AutoModel.from_pretrained("distilroberta-base")
+    # model = AutoModel.from_pretrained("roberta-base")
+    model.eval()
+
+    all_embeddings = []
+
+    with torch.no_grad():
+        for i in range(0, len(texts), batch_size):
+            batch = texts[i:i + batch_size]
+            encoded = tokenizer(
+                batch,
+                padding=True,
+                truncation=True,
+                max_length=256,
+                return_tensors="pt",
+            )
+
+            output = model(**encoded)
+            last_hidden = output.last_hidden_state
+
+            # mean pooling
+            mask = encoded["attention_mask"].unsqueeze(-1)
+            pooled = (last_hidden * mask).sum(1) / mask.sum(1)
+
+            all_embeddings.append(pooled.cpu().numpy())
+
+    return np.vstack(all_embeddings)
+
 
 
 async def load_training_data(db):
@@ -76,6 +111,27 @@ def evaluate_model(vectorizer, clf, texts_test, labels_test):
         "report": report,
         "confusion_matrix": cm,
         "predictions": preds,
+    }
+
+
+def train_and_evaluate_roberta_svc(
+    texts_train,
+    texts_test,
+    labels_train,
+    labels_test,
+):
+    X_train = roberta_embeddings(texts_train)
+    X_test = roberta_embeddings(texts_test)
+
+    clf = LinearSVC()
+    clf.fit(X_train, labels_train)
+
+    preds = clf.predict(X_test)
+
+    return {
+        "accuracy": accuracy_score(labels_test, preds),
+        "report": classification_report(labels_test, preds, output_dict=True),
+        "predictions": preds.tolist(),
     }
 
 
