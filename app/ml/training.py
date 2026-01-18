@@ -66,6 +66,7 @@ def evaluate_model(vectorizer, clf, texts_test, labels_test):
         preds,
         digits=3,
         zero_division=0,
+        output_dict=True,
     )
 
     cm = confusion_matrix(labels_test, preds)

@@ -64,3 +64,4 @@ def train_model(texts, Y, label2id, output_dir="models/email_classifier"):
     model.save_pretrained(output_dir)
     tokenizer.save_pretrained(output_dir)
     return model, tokenizer
+

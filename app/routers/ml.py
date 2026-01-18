@@ -64,7 +64,7 @@ async def train_and_evaluate(db=Depends(get_db)):
         labels_test,
     )
 
-    return {"result_subset": zip([message.split("\n")[0] for message in texts_test], labels_test, metrics['predictions'])[:10]}
+    return list({"metrics": metrics, "result_subset": [result for result in zip([message.split("\n")[0] for message in texts_test], labels_test, metrics['predictions'])][:10]})
 
 @router.get("/predict")
 async def predict_ml_labels(db=Depends(get_db)):
